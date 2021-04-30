@@ -17,21 +17,35 @@ useful starting point.
 There is no need to answer the above questions separately (question by question) in your report.
 A well structured text that covers the above items is preferred. Be creative and rigorous!
 ## Overview of variables
-ageph age of the policyholder
-CODPOSS postal code in Belgium
-duree exposure, fraction of the year the insured is covered
-lnexpo log of exposure
-nbrtotc total number of claims during period of exposure
-chargtot total claim amount
-agecar age of the car: 0 − 1, 2 − 5, 6 − 10, > 10
-sexp sex of the policyholder: male or female
-fuelc type of fuel: petrol or gasoil
-split split of the premium: monthly, once, twice, three times per year
-usec use of the car: private or professional
+### ageph 
+age of the policyholder
+#### CODPOSS 
+postal code in Belgium
+### duree 
+exposure, fraction of the year the insured is covered
+### lnexpo
+log of exposure
+### nbrtotc
+total number of claims during period of exposure
+### chargtot
+total claim amount
+### agecar
+age of the car: 0 − 1, 2 − 5, 6 − 10, > 10
+### sexp
+sex of the policyholder: male or female
+### fuelc
+type of fuel: petrol or gasoil
+### split
+split of the premium: monthly, once, twice, three times per year
+### usec
+use of the car: private or professional
 fleetc car belonging to a fleet: yes or no
-sportc sport car: yes or no
-coverp coverage: MTPL, MTPL+, MTPL+++
-powerc power of the car: < 66, 66-110, >110
+### sportc
+sport car: yes or no
+### coverp
+coverage: MTPL, MTPL+, MTPL+++
+### powerc
+power of the car: < 66, 66-110, >110
 
 L. Yang, Z. Li, and S. Meng. Risk loadings in classification ratemaking. https://arxiv.org/
 abs/2002.01798, 2020.

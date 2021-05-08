@@ -35,6 +35,12 @@ spec <- list("AGEPH" = "age of the policy holder",
              "powerc" = "power of the car",
              "CODPOSS" = "postal code in Belgium")
 
+# Export plot to png file
+export_plot <- function(filename){
+    if(!file.exists(filename)) {
+      dev.print(png, filename = filename, width = 360, height= 360)
+    }
+}
 
 # Percentage of total claims
 factor_hist <- function(factor, xlabel) {
@@ -42,26 +48,18 @@ factor_hist <- function(factor, xlabel) {
     freq_table <- table(covariate)/length(covariate) * 100
     print(freq_table)
     hist <- histogram(covariate, type="percent", xlab= xlabel)
-    export <- str_interp("${factor}_hist.jpg")
-    if(!file.exists(export)) {
-    jpeg(export)
-    hist 
-    dev.off()
-    }
-    return(hist)
+    print(hist)
+    export <- str_interp("${factor}_hist.png")
+    return(export_plot(export))
 }
 
 # Density plot 
 factor_dens <- function(factor, xlabel) {
   covariate <- data[[factor]]
   density <- plot(density(covariate), xlab = xlabel, main = "")
-  export <- str_interp("${factor}_density.jpg")
-  if(!file.exists(export)) {
-    jpeg(export)
-    density 
-    dev.off()
-  }
-  return(density)
+  print(density)
+  export <- str_interp("${factor}_density.png")
+  return(export_plot(export))
 }
 
 factor_hist("nbrtotc", "Number of Claims")

@@ -226,7 +226,6 @@ belgium_shape_sf$freq_class <- cut(belgium_shape_sf$freq,
                                    right = FALSE, include.lowest = TRUE, 
                                    labels = c("low", "average", "high"))
 
-
 # Create a plot with Belgium shape file
 belgium_shape_plot <- ggplot(belgium_shape_sf) +
                 geom_sf(aes(fill = freq_class), 

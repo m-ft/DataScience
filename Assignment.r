@@ -39,18 +39,29 @@ load("freq_tables.rda")
 claims <- read_csv("./Assignment.csv")
 postal <- read_excel("./inspost.xls")
 
-# merge data
+### Preprocessing
+# create new variables and merge claims and postal data
+# create log of total claim amount
 claims$lnchargtot <- log(claims$chargtot)
-data <- merge(claims, postal, by="CODPOSS")
 
-# tibble data frame
+data <- merge(claims, postal, by = "CODPOSS")
+
+# rename all variables to lowercase
+data <- data %>%  rename_all(function(.name) {
+  .name %>% tolower 
+})
+
+# replace variable names
+data <- rename(data, c("expo" = "duree", "nclaims" = "nbrtotc", "claim_freq" = "nbrtotan"))
+
+# create tibble data frame
 df <- as_tibble(data)
 
-struct <- list("CODPOSS" = "postal code in Belgium",
-               "AGEPH" = "age of the policy holder",
-               "nbrtotc" = "number of claims during period of exposure",
-               "nbrtotan" = "claim frequency rate",
-               "duree" = "unit of exposure (fraction of year)",
+struct <- list("coposs" = "postal code in Belgium",
+               "ageph" = "age of the policy holder",
+               "nclaims" = "number of claims during period of exposure",
+               "claim_freq" = "claim frequency rate",
+               "expo" = "period of exposure (fraction of year)",
                "chargtot" = "total claim amount",
                "lnchargtot" = "log of total claim amount",
                "lnexpo" = "log of exposure",
@@ -158,15 +169,16 @@ plot_dens <- function(coll, save=F) {
 ## use "T" or "TRUE" as the last argument to export plots
 
 # Bar plot for all categorical variables
-plot_bar(factors)
-# Frequency table for all categorical variables
-freq_table(factors)
+plot_bar(factors, T)
 
 # Histogram number of claims during period of exposure 
-plot_hist(struct["AGEPH"], 0.5)
+plot_hist(struct["ageph"], 0.5, T)
 
 # Histogram log of total claim amount and number of claims 
-plot_hist(struct[c("lnchargtot", "nbrtotc")], 1)
+plot_hist(struct[c("lnchargtot", "nclaims")], 1, T)
+
+# Frequency table for all categorical variables
+freq_table(factors)
 
 
 

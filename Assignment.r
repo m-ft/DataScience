@@ -190,13 +190,13 @@ plot_dens <- function(coll, save=F) {
 ## use "T" or "TRUE" as the last argument to export plots
 
 # Bar plot for all categorical variables
-plot_bar(factors)
+plot_bar(factors, T)
 
 # Histogram number of claims during period of exposure 
-plot_hist(struct["ageph"], 0.5)
+plot_hist(struct["ageph"], 0.5, T)
 
 # Histogram log of total claim amount and number of claims 
-plot_hist(struct[c("lnchargtot", "nclaims")], 1)
+plot_hist(struct[c("lnchargtot", "nclaims")], 1, T)
 
 # Frequency table for all categorical variables
 freq_table(factors)
@@ -226,14 +226,8 @@ belgium_shape_sf$freq_class <- cut(belgium_shape_sf$freq,
                                    right = FALSE, include.lowest = TRUE, 
                                    labels = c("low", "average", "high"))
 
-<<<<<<< HEAD
 # Create a plot with Belgium shape file
 belgium_shape_plot <- ggplot(belgium_shape_sf) +
-=======
-
-# Create a plot with Belgium shape file
-spatial_claim_freq <- ggplot(belgium_shape_sf) +
->>>>>>> c575b802c2528cdf7ba6e2d12afe86eb372a34cb
                 geom_sf(aes(fill = freq_class), 
                 colour = "black", size = 0.1) +
                 ggtitle("Spatialized claim frequency") + 
@@ -242,8 +236,4 @@ spatial_claim_freq <- ggplot(belgium_shape_sf) +
                 na.value = "white") + 
                 theme_bw()
                   
-<<<<<<< HEAD
 print(belgium_shape_plot) 
-=======
-print(spatial_plot) 
->>>>>>> c575b802c2528cdf7ba6e2d12afe86eb372a34cb

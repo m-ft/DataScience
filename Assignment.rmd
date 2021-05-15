@@ -1,0 +1,119 @@
+#
+# Assignment Data Science for Non-Life Insurance
+# Authors:
+#  - Robin Beniamino Brambilla (r0735676)
+#  - Boonya Chivapong (r0767206)
+#  - Emmett Mufti (r0775432)
+#
+
+# set working directory
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+# R packages
+packages <- c("tidyverse", "lattice", "mgcv", "caret", "rmarkdown", "readxl")
+
+# Install the previously uninstalled packages and load all packages
+load_pac <- function(packages) {
+  `%notin%` <- Negate(`%in%`)
+  for (p in packages) {
+    if (p %notin% rownames(installed.packages())) install.packages(p)
+    if (p %notin% (.packages())) require(p , character.only = TRUE)
+  }
+}
+
+# load packages in the vector `packages`
+load_pac(packages)
+
+# load assignment data
+claims <- read_csv("./Assignment.csv")
+postal <- read_excel("./inspost.xls")
+
+# merge data
+data <- merge(claims, postal, by="CODPOSS")
+
+# tibble data frame
+df <- as_tibble(data)
+
+struct <- list("CODPOSS" = "postal code in Belgium",
+               "AGEPH" = "age of the policy holder",
+               "duree" = "unit of exposure (fraction of year)",
+               "lnexpo" = "log of exposure",
+               "nbrtotc" = "number of claims during period of exposure",
+               "nbrtotan" = "claim frequency rate",
+               "chargtot" = "total claim amount",
+               "agecar" = "age of the car",
+               "sexp" = "sex of the policyholder",
+               "fuelc" = "type of fuel",
+               "split" = "split of the premium",
+               "usec" = "use of the car",
+               "fleetc" = "car belonging to a fleet",
+               "sportc" = "sports car",
+               "coverp" = "type of coverage",
+               "powerc" = "horsepower of the car")
+
+# Categorical variables
+factors <- struct[8:length(struct)]
+
+# Continuous variables
+continuous <- struct[2:7]
+
+# Select a reference group for the factors
+references <- list("2-5", "Female", "Petrol", "Once", "Private", "No", "No", "MTPL", "66-110")  
+names(references) <- names(factors)
+
+set_defaults <- function(references) {
+  for(n in names(references)) {
+    df[[n]] = as.factor(df[[n]])
+    df[[n]] = relevel(df[[n]], ref = references[[n]])
+  }
+} 
+
+set_defaults(references)
+
+### Exploratory Data Analysis
+
+# background color
+bg_color <- "#009CFF"
+
+# Export plot to png file
+export_plot <- function(filename){
+  if(!file.exists(filename)) {
+    dev.print(png, filename = filename, width = 360, height= 360)
+  }
+}
+
+# Percentage of total claims
+plot_bar <- function(var_name, xlabel) {
+  bar <- ggplot(data = df, aes(as.factor(variable))) + theme_bw() + 
+    geom_bar(aes(y = (..count..)/sum(..count..)), col = bg_color, fill = bg_color, alpha = 0.5) + labs(x = xlabel, y = "Frequency")
+  
+  print(bar)
+  export <- str_interp("${factor}_bar.png")
+  return(export_plot(export))
+}
+
+# frequency table
+freq_table <- function(var_name) {
+  covariate <- df[[var_name]]
+  t <- as.data.frame(table(covariate)/length(covariate) * 100)
+  names(t)[1] = struct[[var_name]]
+  names(t)[2] = "Rel Freq"
+  print(t)
+}
+
+# Density plot 
+plot_dens <- function(var_name, xlabel) {
+  covariate <- df[[var_name]]
+  density <- plot(density(covariate), xlab = xlabel, main = "")
+  print(density)
+  export <- str_interp("${factor}_density.png")
+  return(export_plot(export))
+}
+
+
+for(f in names(factors)) {
+  #plot_bar(f)
+  freq_table(f)
+}
+
+render("Assignment.rmd")

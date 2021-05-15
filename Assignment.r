@@ -158,12 +158,12 @@ plot_dens <- function(coll, save=F) {
 ## use "T" or "TRUE" as the last argument to export plots
 
 # Bar plot for all categorical variables
-plot_bar(factors, T)
+plot_bar(factors)
 # Frequency table for all categorical variables
 freq_table(factors)
 
 # Histogram number of claims during period of exposure 
-plot_hist(struct["AGEPH"], 0.5, T)
+plot_hist(struct["AGEPH"], 0.5)
 
 # Histogram log of total claim amount and number of claims 
 plot_hist(struct[c("lnchargtot", "nbrtotc")], 1)

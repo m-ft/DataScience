@@ -11,14 +11,16 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 packages <- c(
   "tidyverse",
   "lattice",
-  "mgcv",
+  "ranger",
+  "glm",
+  "gbm",
   "caret",
   "rmarkdown",
   "readxl",
   "rlang",
   "knitr",
   "evtree",
-  "classInt",
+  "classInt", 
   "sf",
   "styler",
   "miniUI"
@@ -43,11 +45,10 @@ load("freq_tables.rda")
 claims <- read_csv("./Assignment.csv")
 postal <- read_excel("./inspost.xls")
 
-### Preprocessing
 # create new variables and merge claims and postal data
 # create log of total claim amount
 claims$lnamount <- log(claims$chargtot)
-
+# merge data
 data <- merge(claims, postal, by = "CODPOSS")
 
 # rename all variables to lowercase
@@ -208,16 +209,16 @@ plot_dens <- function(coll, save = F) {
 ## use "T" or "TRUE" as the last argument to export plots
 
 # Bar plot for all categorical variables
-plot_bar(factors, T)
+# plot_bar(factors)
 
 # Histogram number of claims during period of exposure
-plot_hist(struct["ageph"], 0.5, T)
+# plot_hist(struct["ageph"], 0.5)
 
 # Histogram log of total claim amount and number of claims
-plot_hist(struct[c("lnamount", "nclaims")], 1, T)
+# plot_hist(struct[c("lnamount", "nclaims")], 1)
 
 # Frequency table for all categorical variables
-freq_table(factors)
+# freq_table(factors)
 
 ### Spatial data
 belgium_shape_sf <- st_read("./shapefileBelgium/npc96_region_Project1.shp", quiet = TRUE)
@@ -247,7 +248,7 @@ belgium_shape_sf$freq_class <- cut(belgium_shape_sf$freq,
   labels = c("low", "average", "high")
 )
 
-# Create a plot with Belgium shape file
+
 plot_shape <- function(shape_obj, title, save = F) {
   shape <- ggplot(shape_obj) +
     geom_sf(aes(fill = freq_class),
@@ -267,7 +268,8 @@ plot_shape <- function(shape_obj, title, save = F) {
   }
 }
 
-belgium_shape_plot <- plot_shape(belgium_shape_sf, "Spatialized Claim Frequency", T)
+# Create a plot with Belgium shape file
+# belgium_shape_plot <- plot_shape(belgium_shape_sf, "Spatialized Claim Frequency")
 
 
 
@@ -286,4 +288,86 @@ features <- c(
   "sportc",
   "usec"
 )
+
+model_data <- as.data.frame(df[features])
+
+### Preprocessing 
+
+## Near Zero Variance
+# We use the `nearZeroVar` function from R caret package to
+# identify the near zero variance feature variables
+# near zero variance variables are detected using two metrics:
+# the frequency ratio of the most common and the second most common value
+# the ratio of unique values relative to the total number of samples
+##
+nzv <- nearZeroVar(model_data, saveMetrics = T)
+# We observe that `fleetc`, `sportc` and `usec` are Near Zero Variance Variables
+kable(nzv)
+
+nzv_true <- nzv[nzv$nzv,][1:3,] %>% rownames
+
+kable(nzv_true)
+
+## Train the model using caret train function
+# use `pca` as a preprocessing option to deal with nzv variables so that
+# instead of throwing out data the Near Zero Variance predictors 
+# end up combined into one high variance PCA variable
+# Set na.action to na.pass so that training halts if missing values are 
+# present
+##
+
+freq_model_data <- cbind(nclaims=df$nclaims, model_data)
+
+# create custom folds to use as index in the train control object
+freq_folds <- createFolds(freq_model_data$nclaims, k = 10)
+
+# Create a reusable train control object to define train/test split 
+train_control_obj <- trainControl(
+  verboseIter = TRUE,
+  savePredictions = TRUE,
+  index = freq_folds
+)
+
+pre_process <- c("scale", "center", "pca")
+
+set.seed(698)
+freq_model <- function(method) {
+  train(
+    nclaims ~ .,
+    data = freq_model_data,
+    method = method,
+    trControl = train_control_obj,
+    na.action = na.pass,
+    preProcess = pre_process
+)
+}
+
+# GLM 
+freq_model_glm <- freq_model("glm")
+print(freq_model_glm)
+ 
+
+# GLMNET
+freq_model_glmnet <- freq_model("glmnet")
+print(freq_model_glmnet)
+
+
+# Gradient Boosting Machine 
+freq_model_gbm <- freq_model("gbm")
+print(freq_model_gbm)
+
+
+# Random Forest
+tune_grid <- data.frame(mtry = c(2, 11, 6, 7, 10, 8))
+freq_model_rf <- train(
+    nclaims ~ .,
+    data = freq_model_data,
+    method = "ranger",
+    na.action = na.pass,
+    preProcess = pre_process,
+    tuneLength = 10
+)
+
+print(freq_model_rf)
+
 

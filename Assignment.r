@@ -352,14 +352,27 @@ print(freq_model_glmnet)
  
 
 # Gradient Boosting Machine 
- freq_model_gbm <- freq_model("gbm")
- print(freq_model_gbm)
+freq_model_gbm <- freq_model("gbm")
+print(freq_model_gbm)
 
 
-## Severity modeling
+### Comparing frequency models
+# We want to pick the model with the highest AUC across all 10 freq_folds
+# and low standard deviation in AUC
+###
+freq_model_list <- list("GLM" = freq_model_glm,
+                        "GLMNET" = freq_model_glmnet,
+                        "GBM" = freq_model_gbm)
+
+freq_resamples <- resamples(freq_model_list)
+
+summary(freq_resamples)
+
+
+### Severity modeling
 # We create a data set for severity modeling by filtering for non-zero
 # claims data 
-##
+###
 severity_data <- cbind(amount=df$amount, freq_model_data)
 non_zero_freq <- which(freq_model_data$nclaims < 1)
 # Remove rows with zero claims
@@ -414,5 +427,16 @@ sev_model_gbm <- sev_model("gbm")
 print(sev_model_gbm)
 
 
+### Comparing severity models
+# We want to pick the model with the highest AUC across all 10 freq_folds
+# and low standard deviation in AUC
+###
 
+sev_model_list <- list("GLM" = sev_model_glm,
+                        "GLMNET" = sev_model_glmnet,
+                        "GBM" = sev_model_gbm)
+
+sev_resamples <- resamples(sev_model_list)
+
+summary(sev_resamples)
 

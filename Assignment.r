@@ -268,7 +268,7 @@ plot_shape <- function(shape_obj, title, save = F) {
 }
 
 # Create a plot with Belgium shape file
-# belgium_shape_plot <- plot_shape(belgium_shape_sf, "Spatialized Claim Frequency")
+belgium_shape_plot <- plot_shape(belgium_shape_sf, "Spatialized Claim Frequency")
 
 
 
@@ -315,7 +315,13 @@ kable(nzv_true)
 # present
 ##
 
+
 freq_model_data <- cbind(nclaims=df$nclaims, model_data)
+
+# Convert nclaims to numeric if not already numeric
+# check if numeric 
+# mode(freq_model_data$nclaims)
+# freq_model_data$nclaims =  sapply(freq_model_data$nclaims, as.numeric)
 
 # create custom folds to use as index in the train control object
 freq_folds <- createFolds(freq_model_data$nclaims, k = 10)
@@ -324,36 +330,48 @@ freq_folds <- createFolds(freq_model_data$nclaims, k = 10)
 train_control_freq <- trainControl(
   verboseIter = TRUE,
   savePredictions = TRUE,
-  index = freq_folds
+  index = freq_folds,
 )
 
 pre_process_freq <- c("scale", "center", "pca")
 
 set.seed(698)
-freq_model <- function(method) {
+freq_model <- function(method, tune_grid) {
   train(
     nclaims ~ .,
     data = freq_model_data,
     method = method,
+    tuneGrid = tune_grid,
     trControl = train_control_freq,
     na.action = na.pass,
     preProcess = pre_process_freq
 )
 }
 
-# Frequency modeling with glm 
-freq_model_glm <- freq_model("glm")
+# Frequency modeling with glm
+freq_model_glm <- freq_model("glm", NULL)
 print(freq_model_glm)
   
  
 # Frequency modeling with glmnet
-freq_model_glmnet <- freq_model("glmnet")
-print(freq_model_glmnet)
- 
 
-# Gradient Boosting Machine 
-freq_model_gbm <- freq_model("gbm")
+# Define tuneGrid for glmnet
+tune_grid_glmnet_freq <- expand.grid(
+            # mixing percentage 
+              alpha = 0:1,
+            # regularization parameter
+              lambda = 0:10 / 10
+              )
+
+# glmnet 
+freq_model_glmnet <- freq_model("glmnet", NULL)
+print(freq_model_glmnet)
+
+
+# gbm 
+freq_model_gbm <- freq_model("gbm", NULL)
 print(freq_model_gbm)
+
 
 
 ### Comparing frequency models
@@ -362,68 +380,102 @@ print(freq_model_gbm)
 ###
 freq_model_list <- list("GLM" = freq_model_glm,
                         "GLMNET" = freq_model_glmnet,
-                        "GBM" = freq_model_gbm)
+                        "GBM" = freq_model_gbm
+                        )
 
 freq_resamples <- resamples(freq_model_list)
 
+
+
+### Frequency Model Selection
+# Select the least complex model with smallest RMSE 
+#
+###
+
+
 summary(freq_resamples)
+
+ggplot(freq_resamples)
+
+### Frequency Model Prediction 
+###
+
+freq_glm <- predict(freq_model_glm, freq_model_data)
+freq_glmnet <- predict(freq_model_glmnet, freq_model_data)
+freq_gbm <- predict(freq_model_gbm, freq_model_data)
+
 
 
 ### Severity modeling
 # We create a data set for severity modeling by filtering for non-zero
-# claims data 
+# claims data
 ###
 severity_data <- cbind(amount=df$amount, freq_model_data)
+
 non_zero_freq <- which(freq_model_data$nclaims < 1)
 # Remove rows with zero claims
 non_zero_data <- severity_data[-non_zero_freq, ]
 head(non_zero_data)
-# Create a new variable for average amount 
+# Create a new variable for average amount
 non_zero_data$average <- non_zero_data$amount/non_zero_data$nclaims
 head(non_zero_data)
-# convert average to numeric
-non_zero_data$average =  sapply(non_zero_data$average, as.numeric)
+
+# convert average to numeric if not already
+# first check if numeric
+# mode(non_zero_data$average)
+# non_zero_data$average =  sapply(non_zero_data$average, as.numeric)
 sev_model_data <- as.data.frame(non_zero_data[, -c(1, 2)])
 
 
 
-# Create folds 
+# Create folds
 sev_folds <- createFolds(sev_model_data$average, k = 10)
 
-# Create a reusable train control object to define train/test split 
+# Create a reusable train control object to define train/test split
 train_control_sev <- trainControl(
   verboseIter = TRUE,
   savePredictions = TRUE,
   index = sev_folds
   )
 
-# PreProcess 
+# PreProcess
 pre_process_sev <- c("scale", "center", "pca")
 
 
 set.seed(698)
 # Function to create severity models
-sev_model <- function(method) {
+sev_model <- function(method, tune_grid) {
   train(
     average ~ .,
     data = sev_model_data,
     method = method,
+    tuneGrid = tune_grid,
     trControl = train_control_sev,
     na.action = na.pass,
     preProcess = pre_process_sev
 )
 }
 
-# Severity modeling with glm 
-sev_model_glm <- sev_model("glm")
+# Severity modeling with glm
+sev_model_glm <- sev_model("glm", NULL)
 print(sev_model_glm)
 
 # Severity modeling with glmnet
-sev_model_glmnet <- sev_model("glmnet")
+
+# Define tune grid
+tune_grid_glmnet_sev <- expand.grid(
+            # mixing percentage
+              alpha = 0:1,
+            # regularization parameter
+              lambda = 0:10 / 10
+              )
+
+# glm without tuning
+sev_model_glmnet <- sev_model("glmnet", NULL)
 print(sev_model_glmnet)
 
-# Severity modeling with gardient boosting machine
-sev_model_gbm <- sev_model("gbm")
+# gbm 
+sev_model_gbm <- sev_model("gbm", NULL)
 print(sev_model_gbm)
 
 
@@ -432,11 +484,47 @@ print(sev_model_gbm)
 # and low standard deviation in AUC
 ###
 
-sev_model_list <- list("GLM" = sev_model_glm,
-                        "GLMNET" = sev_model_glmnet,
-                        "GBM" = sev_model_gbm)
+sev_model_list <- list(
+                       "GLM" = sev_model_glm,
+                       "GLMNET" = sev_model_glmnet,
+                       "GBM" = sev_model_gbm
+                       )
 
 sev_resamples <- resamples(sev_model_list)
 
+
+
+### Severity Model Selection
+# select model the least complex model with smallest RMSE
+###
 summary(sev_resamples)
+
+ggplot(sev_resamples)
+
+### Severity Model Prediction
+###
+severity_data$average <- severity_data$amount/severity_data$nclaims
+
+sev_new_data <- as.data.frame(severity_data[, -c(1, 2)])
+
+sev_glm  <- predict(sev_model_glm, newdata = sev_new_data)
+
+sev_glmnet  <- predict(sev_model_glmnet, newdata = sev_new_data)
+
+sev_gbm  <- predict(sev_model_gbm, newdata = sev_new_data)
+
+
+#### Premium Calculation
+# Calculate the premium
+####
+
+premium_pred <- data.frame(
+  prem_glmn = freq_glm * sev_glm,
+  prem_glmnet = freq_glmnet * sev_glmnet,
+  prem_gbm = freq_gbm * sev_gbm
+)
+
+head(premium_pred)
+
+
 

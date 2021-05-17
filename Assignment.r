@@ -336,12 +336,11 @@ train_control_freq <- trainControl(
 pre_process_freq <- c("scale", "center", "pca")
 
 set.seed(698)
-freq_model <- function(method, tune_grid) {
+freq_model <- function(method) {
   train(
     nclaims ~ .,
     data = freq_model_data,
     method = method,
-    tuneGrid = tune_grid,
     trControl = train_control_freq,
     na.action = na.pass,
     preProcess = pre_process_freq
@@ -349,35 +348,25 @@ freq_model <- function(method, tune_grid) {
 }
 
 # Frequency modeling with glm
-freq_model_glm <- freq_model("glm", NULL)
+freq_model_glm <- freq_model("glm")
 print(freq_model_glm)
   
  
 # Frequency modeling with glmnet
 
-# Define tuneGrid for glmnet
-tune_grid_glmnet_freq <- expand.grid(
-            # mixing percentage 
-              alpha = 0:1,
-            # regularization parameter
-              lambda = 0:10 / 10
-              )
-
 # glmnet 
-freq_model_glmnet <- freq_model("glmnet", NULL)
+freq_model_glmnet <- freq_model("glmnet")
 print(freq_model_glmnet)
 
 
 # gbm 
-freq_model_gbm <- freq_model("gbm", NULL)
+freq_model_gbm <- freq_model("gbm")
 print(freq_model_gbm)
 
 
 
 ### Comparing frequency models
-# We want to pick the model with the highest AUC across all 10 freq_folds
-# and low standard deviation in AUC
-###
+
 freq_model_list <- list("GLM" = freq_model_glm,
                         "GLMNET" = freq_model_glmnet,
                         "GBM" = freq_model_gbm
@@ -457,32 +446,22 @@ sev_model <- function(method, tune_grid) {
 }
 
 # Severity modeling with glm
-sev_model_glm <- sev_model("glm", NULL)
+sev_model_glm <- sev_model("glm")
 print(sev_model_glm)
 
 # Severity modeling with glmnet
 
-# Define tune grid
-tune_grid_glmnet_sev <- expand.grid(
-            # mixing percentage
-              alpha = 0:1,
-            # regularization parameter
-              lambda = 0:10 / 10
-              )
-
-# glm without tuning
-sev_model_glmnet <- sev_model("glmnet", NULL)
+# glm 
+sev_model_glmnet <- sev_model("glmnet")
 print(sev_model_glmnet)
 
 # gbm 
-sev_model_gbm <- sev_model("gbm", NULL)
+sev_model_gbm <- sev_model("gbm")
 print(sev_model_gbm)
 
 
 ### Comparing severity models
-# We want to pick the model with the highest AUC across all 10 freq_folds
-# and low standard deviation in AUC
-###
+
 
 sev_model_list <- list(
                        "GLM" = sev_model_glm,
@@ -500,6 +479,7 @@ sev_resamples <- resamples(sev_model_list)
 summary(sev_resamples)
 
 ggplot(sev_resamples)
+
 
 ### Severity Model Prediction
 ###

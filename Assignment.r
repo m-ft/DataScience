@@ -341,36 +341,19 @@ freq_model <- function(method) {
 )
 }
 
-# GLM 
-# freq_model_glm <- freq_model("glm")
-# print(freq_model_glm)
-#  
-# 
-# # GLMNET
-# freq_model_glmnet <- freq_model("glmnet")
-# print(freq_model_glmnet)
-# 
+# Frequency modeling with glm 
+freq_model_glm <- freq_model("glm")
+print(freq_model_glm)
+  
+ 
+# Frequency modeling with glmnet
+freq_model_glmnet <- freq_model("glmnet")
+print(freq_model_glmnet)
+ 
 
 # Gradient Boosting Machine 
-# freq_model_gbm <- freq_model("gbm")
-# print(freq_model_gbm)
-
-
-# Random Forest
-# tune_grid <- data.frame(mtry = c(2, 11, 6, 7, 10, 8))
-# freq_model_rf <- train(
-#     nclaims ~ .,
-#     data = freq_model_data,
-#     method = "ranger",
-#     na.action = na.pass,
-#     preProcess = pre_process_freq,
-#     tuneLength = 10
-# )
-# 
-# print(freq_model_rf)
-
-
-
+ freq_model_gbm <- freq_model("gbm")
+ print(freq_model_gbm)
 
 
 ## Severity modeling
@@ -399,7 +382,6 @@ train_control_sev <- trainControl(
   verboseIter = TRUE,
   savePredictions = TRUE,
   index = sev_folds
-
   )
 
 # PreProcess 

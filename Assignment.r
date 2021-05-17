@@ -12,7 +12,6 @@ packages <- c(
   "tidyverse",
   "lattice",
   "ranger",
-  "glm",
   "gbm",
   "caret",
   "rmarkdown",
@@ -322,13 +321,13 @@ freq_model_data <- cbind(nclaims=df$nclaims, model_data)
 freq_folds <- createFolds(freq_model_data$nclaims, k = 10)
 
 # Create a reusable train control object to define train/test split 
-train_control_obj <- trainControl(
+train_control_freq <- trainControl(
   verboseIter = TRUE,
   savePredictions = TRUE,
   index = freq_folds
 )
 
-pre_process <- c("scale", "center", "pca")
+pre_process_freq <- c("scale", "center", "pca")
 
 set.seed(698)
 freq_model <- function(method) {
@@ -336,38 +335,102 @@ freq_model <- function(method) {
     nclaims ~ .,
     data = freq_model_data,
     method = method,
-    trControl = train_control_obj,
+    trControl = train_control_freq,
     na.action = na.pass,
-    preProcess = pre_process
+    preProcess = pre_process_freq
 )
 }
 
 # GLM 
-freq_model_glm <- freq_model("glm")
-print(freq_model_glm)
- 
-
-# GLMNET
-freq_model_glmnet <- freq_model("glmnet")
-print(freq_model_glmnet)
-
+# freq_model_glm <- freq_model("glm")
+# print(freq_model_glm)
+#  
+# 
+# # GLMNET
+# freq_model_glmnet <- freq_model("glmnet")
+# print(freq_model_glmnet)
+# 
 
 # Gradient Boosting Machine 
-freq_model_gbm <- freq_model("gbm")
-print(freq_model_gbm)
+# freq_model_gbm <- freq_model("gbm")
+# print(freq_model_gbm)
 
 
 # Random Forest
-tune_grid <- data.frame(mtry = c(2, 11, 6, 7, 10, 8))
-freq_model_rf <- train(
-    nclaims ~ .,
-    data = freq_model_data,
-    method = "ranger",
-    na.action = na.pass,
-    preProcess = pre_process,
-    tuneLength = 10
-)
+# tune_grid <- data.frame(mtry = c(2, 11, 6, 7, 10, 8))
+# freq_model_rf <- train(
+#     nclaims ~ .,
+#     data = freq_model_data,
+#     method = "ranger",
+#     na.action = na.pass,
+#     preProcess = pre_process_freq,
+#     tuneLength = 10
+# )
+# 
+# print(freq_model_rf)
 
-print(freq_model_rf)
+
+
+
+
+## Severity modeling
+# We create a data set for severity modeling by filtering for non-zero
+# claims data 
+##
+severity_data <- cbind(amount=df$amount, freq_model_data)
+non_zero_freq <- which(freq_model_data$nclaims < 1)
+# Remove rows with zero claims
+non_zero_data <- severity_data[-non_zero_freq, ]
+head(non_zero_data)
+# Create a new variable for average amount 
+non_zero_data$average <- non_zero_data$amount/non_zero_data$nclaims
+head(non_zero_data)
+# convert average to numeric
+non_zero_data$average =  sapply(non_zero_data$average, as.numeric)
+sev_model_data <- as.data.frame(non_zero_data[, -c(1, 2)])
+
+
+
+# Create folds 
+sev_folds <- createFolds(sev_model_data$average, k = 10)
+
+# Create a reusable train control object to define train/test split 
+train_control_sev <- trainControl(
+  verboseIter = TRUE,
+  savePredictions = TRUE,
+  index = sev_folds
+
+  )
+
+# PreProcess 
+pre_process_sev <- c("scale", "center", "pca")
+
+
+set.seed(698)
+# Function to create severity models
+sev_model <- function(method) {
+  train(
+    average ~ .,
+    data = sev_model_data,
+    method = method,
+    trControl = train_control_sev,
+    na.action = na.pass,
+    preProcess = pre_process_sev
+)
+}
+
+# Severity modeling with glm 
+sev_model_glm <- sev_model("glm")
+print(sev_model_glm)
+
+# Severity modeling with glmnet
+sev_model_glmnet <- sev_model("glmnet")
+print(sev_model_glmnet)
+
+# Severity modeling with gardient boosting machine
+sev_model_gbm <- sev_model("gbm")
+print(sev_model_gbm)
+
+
 
 
